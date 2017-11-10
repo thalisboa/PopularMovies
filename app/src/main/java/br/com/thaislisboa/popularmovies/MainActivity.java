@@ -3,6 +3,7 @@ package br.com.thaislisboa.popularmovies;
 
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -34,6 +35,8 @@ import br.com.thaislisboa.popularmovies.domain.model.Movie;
 
 public class MainActivity extends AppCompatActivity {
 
+    private List<Movie> movies;
+
     private RecyclerView mRecyclerView;
     private String appKey;
 
@@ -43,14 +46,49 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.main_view);
 
         try {
+            movies = savedInstanceState != null ?
+                    (ArrayList) savedInstanceState.getSerializable("movies") :
+                    new ArrayList<>();
+
             Bundle b = getPackageManager().getApplicationInfo(getPackageName(), PackageManager.GET_META_DATA).metaData;
             appKey = b.getString("appkey");
             mRecyclerView = findViewById(R.id.rv_main);
-            mRecyclerView.setLayoutManager(new GridLayoutManager(this, 2));
-            fetchMostPopular();
+            int spanCount = getResources().getConfiguration().orientation;
+
+            spanCount = spanCount == Configuration.ORIENTATION_PORTRAIT ? 2 : 4;
+            mRecyclerView.setLayoutManager(new GridLayoutManager(this, spanCount));
+
+            if (savedInstanceState == null) {
+                fetchMostPopular();
+            } else {
+                updateList();
+            }
         } catch (Exception cause) {
             Log.e("MV", cause.getMessage(), cause);
         }
+    }
+
+    private void updateList() {
+        updateList(null);
+    }
+
+    private void updateList(String action) {
+        if (action != null) {
+            new MovieAsyncTask().execute(action);
+        } else {
+            mRecyclerView.setAdapter(new MovieAdapter(movies));
+        }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putSerializable("movies", (ArrayList) movies);
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
     }
 
     @Override
@@ -80,22 +118,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void fetchTopRated() throws Exception {
-        MovieAsyncTask mat = new MovieAsyncTask();
-        List<Movie> movies = mat.execute("top_rated").get();
-        mRecyclerView.setAdapter(new MovieAdapter(movies));
+        updateList("top_rated");
     }
 
     private void fetchMostPopular() throws Exception {
-        MovieAsyncTask mat = new MovieAsyncTask();
-        List<Movie> movies = mat.execute("popular").get();
-        mRecyclerView.setAdapter(new MovieAdapter(movies));
+        updateList("popular");
     }
 
     class MovieAsyncTask extends AsyncTask<String, Movie, List<Movie>> {
 
         @Override
+        protected void onPostExecute(List<Movie> movies) {
+            MainActivity.this.movies = movies;
+            mRecyclerView.setAdapter(new MovieAdapter(movies));
+            super.onPostExecute(movies);
+        }
+
+        @Override
         protected List<Movie> doInBackground(String... strings) {
-            List<Movie> movies = new ArrayList<>();
 
             try {
                 URL url = new URL(Uri.parse("http://api.themoviedb.org/3/movie/" + strings[0])
@@ -116,6 +156,8 @@ public class MainActivity extends AppCompatActivity {
                     JSONObject json = new JSONObject(content.toString());
                     JSONArray results = json.getJSONArray("results");
                     Movie movie;
+
+                    movies.clear();
 
                     for (int i = 0; i < results.length(); i++) {
                         json = results.getJSONObject(i);

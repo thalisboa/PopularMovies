@@ -5,18 +5,18 @@ import java.io.Serializable;
 public class Movie implements Serializable {
     private long id;
     private boolean video;
-    private double vote_average;
+    private double voteAverage;
     private String title;
     private String poster;
     private String backdrop;
     private String overview;
     private String date;
 
-    public Movie(long id, boolean video, double vote_average,
+    public Movie(long id, boolean video, double voteAverage,
                  String title, String poster, String backdrop, String overview, String date) {
         this.id = id;
         this.video = video;
-        this.vote_average = vote_average;
+        this.voteAverage = voteAverage;
         this.title = title;
         this.poster = poster;
         this.backdrop = backdrop;
@@ -32,12 +32,12 @@ public class Movie implements Serializable {
         return video;
     }
 
-    public double getVote_average() {
-        return vote_average;
+    public double getVoteAverage() {
+        return voteAverage;
     }
 
     public String getGrade() {
-        return String.format("%s/10", getVote_average());
+        return String.format("%s/10", getVoteAverage());
     }
 
     public String getTitle() {
@@ -69,7 +69,7 @@ public class Movie implements Serializable {
     public String toString() {
         return "Movie{" + "id=" + id +
                 ", video=" + video +
-                ", vote_average=" + vote_average +
+                ", voteAverage=" + voteAverage +
                 ", title='" + title + '\'' +
                 ", poster='" + poster + '\'' +
                 ", backdrop='" + backdrop + '\'' +
